@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import os
 from uuid import UUID
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import FileResponse, JSONResponse
@@ -17,20 +18,30 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Mount assets (JS/CSS)
-app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+app.mount("/assets", StaticFiles(directory="client/dist/assets"), name="assets")
 
 # Serve React App (SPA)
 @app.get("/", include_in_schema=False)
 async def serve_spa():
-    return FileResponse("frontend/dist/index.html")
+    return FileResponse("client/dist/index.html")
 
 # Fallback for client-side routing (optional, but good practice)
 @app.exception_handler(404)
 async def custom_404_handler(request, exc):
     if request.url.path.startswith("/api"):
          return JSONResponse({"detail": "Not Found"}, status_code=404)
-    return FileResponse("frontend/dist/index.html")
+    return FileResponse("client/dist/index.html")
 
 @app.get("/posts", response_model=list[PostResponse])
 async def get_all_posts(limit: int = None, db: AsyncSession = Depends(get_db)):
@@ -49,9 +60,25 @@ async def get_post(id: UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Post not found")
     return post
 
+    return post
+    
+# ImageKit Initialization
+from imagekitio import ImageKit
+
+imagekit = ImageKit(
+    public_key=os.getenv("IMAGEKIT_PUBLIC_KEY"),
+    private_key=os.getenv("IMAGEKIT_PRIVATE_KEY"),
+    url_endpoint=os.getenv("IMAGEKIT_URL_ENDPOINT")
+)
+
+@app.get("/api/auth/imagekit")
+def get_imagekit_auth():
+    auth_params = imagekit.get_authentication_parameters()
+    return auth_params
+
 @app.post("/posts", response_model=PostResponse)
 async def create_post(post: PostCreate, db: AsyncSession = Depends(get_db)):
-    new_post = Post(title=post.title, content=post.content)
+    new_post = Post(title=post.title, content=post.content, image_url=post.image_url)
     db.add(new_post)
     await db.commit()
     await db.refresh(new_post)
