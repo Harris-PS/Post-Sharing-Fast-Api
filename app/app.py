@@ -18,6 +18,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
 from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
@@ -28,20 +29,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount assets (JS/CSS)
-app.mount("/assets", StaticFiles(directory="client/dist/assets"), name="assets")
+# Mount assets (JS/CSS) - only if directory exists
+if os.path.exists("client/dist/assets"):
+    app.mount("/assets", StaticFiles(directory="client/dist/assets"), name="assets")
 
-# Serve React App (SPA)
-@app.get("/", include_in_schema=False)
-async def serve_spa():
-    return FileResponse("client/dist/index.html")
+# Serve React App (SPA) - only if built
+if os.path.exists("client/dist/index.html"):
+    @app.get("/", include_in_schema=False)
+    async def serve_spa():
+        return FileResponse("client/dist/index.html")
+    
+    # Fallback for client-side routing
+    @app.exception_handler(404)
+    async def custom_404_handler(request, exc):
+        if request.url.path.startswith("/api"):
+             return JSONResponse({"detail": "Not Found"}, status_code=404)
+        return FileResponse("client/dist/index.html")
+else:
+    # Fallback if frontend not built
+    @app.get("/", include_in_schema=False)
+    async def serve_info():
+        return {"message": "API is running. Frontend not built yet."}
 
-# Fallback for client-side routing (optional, but good practice)
-@app.exception_handler(404)
-async def custom_404_handler(request, exc):
-    if request.url.path.startswith("/api"):
-         return JSONResponse({"detail": "Not Found"}, status_code=404)
-    return FileResponse("client/dist/index.html")
 
 @app.get("/posts", response_model=list[PostResponse])
 async def get_all_posts(limit: int = None, db: AsyncSession = Depends(get_db)):
