@@ -13,3 +13,8 @@ __pycache__/
 node_modules/
 npm-debug.log
 yarn-error.log
+
+# Electron
+client/dist/
+client/dist-electron/
+client/out/

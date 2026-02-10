@@ -1,0 +1,16 @@
+{
+  "appId": "com.shareapp.postsharing",
+  "productName": "PostSharingApp",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "win": {
+    "target": ["dir"],
+    "icon": "public/icon-512.png"
+  }
+}
