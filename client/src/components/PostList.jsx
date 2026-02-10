@@ -16,8 +16,15 @@ function PostList({ posts, onDelete }) {
         }}>
           <h3 style={{ fontSize: '1.25rem', marginBottom: '0.8rem', color: '#e2e8f0' }}>{post.title}</h3>
           {post.image_url && (
-            <div style={{ marginBottom: '1rem', borderRadius: '8px', overflow: 'hidden' }}>
-              <img src={post.image_url} alt={post.title} style={{ width: '100%', height: 'auto', display: 'block' }} />
+            <div style={{ marginBottom: '1rem', borderRadius: '8px', overflow: 'hidden', background: 'rgba(15, 23, 42, 0.5)' }}>
+              <img 
+                src={post.image_url} 
+                alt={post.title} 
+                style={{ width: '100%', height: 'auto', display: 'block' }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
             </div>
           )}
           <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: '1.6' }}>{post.content}</p>

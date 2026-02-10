@@ -62,19 +62,35 @@ async def get_post(id: UUID, db: AsyncSession = Depends(get_db)):
 
     return post
     
-# ImageKit Initialization
-from imagekitio import ImageKit
+# ImageKit Authentication
+import hmac
+import hashlib
+import uuid
+from datetime import datetime, timedelta
 
-imagekit = ImageKit(
-    public_key=os.getenv("IMAGEKIT_PUBLIC_KEY"),
-    private_key=os.getenv("IMAGEKIT_PRIVATE_KEY"),
-    url_endpoint=os.getenv("IMAGEKIT_URL_ENDPOINT")
-)
+IMAGEKIT_PRIVATE_KEY = os.getenv("IMAGEKIT_PRIVATE_KEY")
+IMAGEKIT_PUBLIC_KEY = os.getenv("VITE_IMAGEKIT_PUBLIC_KEY")
+IMAGEKIT_URL_ENDPOINT = os.getenv("VITE_IMAGEKIT_URL_ENDPOINT")
 
 @app.get("/api/auth/imagekit")
 def get_imagekit_auth():
-    auth_params = imagekit.get_authentication_parameters()
-    return auth_params
+    # Generate authentication parameters manually
+    token = str(uuid.uuid4())
+    expire = int((datetime.now() + timedelta(minutes=10)).timestamp())
+    
+    # Create signature using HMAC-SHA1
+    string_to_sign = f"{token}{expire}"
+    signature = hmac.new(
+        IMAGEKIT_PRIVATE_KEY.encode('utf-8'),
+        string_to_sign.encode('utf-8'),
+        hashlib.sha1
+    ).hexdigest()
+    
+    return {
+        "token": token,
+        "expire": expire,
+        "signature": signature
+    }
 
 @app.post("/posts", response_model=PostResponse)
 async def create_post(post: PostCreate, db: AsyncSession = Depends(get_db)):
