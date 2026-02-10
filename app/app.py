@@ -59,8 +59,7 @@ async def get_post(id: UUID, db: AsyncSession = Depends(get_db)):
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     return post
-
-    return post
+    
     
 # ImageKit Authentication
 import hmac
